@@ -43,6 +43,14 @@ def handle_updates(updates):
 			send_message("Welcome to your Institute Information Finder Bot.\n\
 				You can get information about NITs, IITs, IIITs.\n\
 				*Begin by searching - *", chat, keyboard)
+		if text == "Within State":
+			items = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh",\
+			"Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand",\
+			"Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",\
+			"Puducherry","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand"\
+			"West Bengal"]
+			keyboard = build_keyboard(items)
+			send_message("Select State to list all NITs, IITs & IIITs within ", chat, keyboard)
 		elif text.startswith("/"):
 			continue
 		else:
