@@ -33,6 +33,27 @@ def get_last_update_id(updates):
 		updates_ids.append(int(update["update_id"]))
 	return max(updates_ids)
 
+def handle_updates(updates):
+	for update in updates["result"]:
+		text = update["message"]["text"]
+		chat = update["message"]["chat"]["id"]
+		if text == "/start":
+			items = ["Institute Name", "Within State"]
+			keyboard = build_keyboard(items)
+			send_message("Welcome to your Institute Information Finder Bot.\n\
+				You can get information about NITs, IITs, IIITs.\n\
+				*Begin by searching - *", chat, keyboard)
+		elif text.startswith("/"):
+			continue
+		else:
+			send_message("Sorry Couldn't get you!\n\
+				You can always /start", chat)
+
+def build_keyboard(items):
+	keyboard = [[item] for item in items]
+	reply_markup = {"keyboard":keyboard, "one_time_keyboard": True}
+	return json.dumps(reply_markup)
+
 def echo_all(updates):
 	for update in updates["result"]:
 		try:
@@ -51,7 +72,7 @@ def main():
 		# print(updates)
 		if len(updates["result"])>0:
 			last_update_id = get_last_update_id(updates) + 1
-			echo_all(updates)
+			handle_updates(updates)
 			time.sleep(0.5)
 
 if __name__ == '__main__':
