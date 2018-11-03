@@ -4,6 +4,7 @@ import datetime
 import time
 import urllib
 import os
+from db_conn import db
 
 TOKEN = os.environ['TELEGRAM_TOKEN']
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
@@ -44,12 +45,11 @@ def handle_updates(updates):
 				You can get information about NITs, IITs, IIITs.\n\
 				*Begin by searching - *", chat, keyboard)
 		if text == "Within State":
-			items = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chandigarh",\
-			"Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jammu and Kashmir","Jharkhand",\
-			"Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha",\
-			"Puducherry","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand"\
-			"West Bengal"]
-			keyboard = build_keyboard(items)
+			state_names = db["states"].find_one({"value":"state_names"})
+			items_ = []
+			for names in state_names["names"]:
+				items_.append(names)
+			keyboard = build_keyboard(items_)
 			send_message("Select State to list all NITs, IITs & IIITs within ", chat, keyboard)
 		elif text.startswith("/"):
 			continue
