@@ -72,12 +72,17 @@ def handle_updates(updates):
 			msg_rank = ""
 			for key, value in ranking.items():
 				msg_rank += str(key)+" : "+str(value)+"\n"
+			msg_dept = ""
+
+			for value in i_obj["departments"]:
+				msg_dept += value+"\n"
 			message = "*{}*\n\
 			*Location* : {}\n\
 			*Established* : {}\n\
 			*Rankings* : {}\
+			*Departments* : {}\
 			[Website]({}), [Wiki]({})\n\
-			".format(text, i_obj["location"], i_obj["established"], msg_rank, i_obj["website"], i_obj["wiki_link"])
+			".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
 			send_message(message, chat)
 		elif text.startswith("/"):
 			continue
