@@ -62,38 +62,29 @@ def handle_updates(updates):
 				send_message("Welcome to Institute Information Finder Bot.🤖\nYou can get information about NITs & IITs.\n\
 				*Features* - \n\
 				/search - Search for Institutes\n\
-				/top10iit - Get Top 10 IITs\n\
+				/top10iit -  Get Top 10 IITs\n\
 				/top10nit - Get Top 10 NITs\n\
 				/help - Get help any time\n", chat)
 
 			elif text == "/search":
-				items = ["Institute Name", "Within State"]
+				items = ["Institute Name search", "Statewise search"]
 				keyboard = build_keyboard(items)
-				send_message("Welcome to Institute Information Finder Bot.🤖\nYou can get information about NITs & IITs.\n*Begin by searching - *", chat, keyboard)
+				send_message("Welcome to College Knowledge Bot.🤖\nYou can get information about NITs & IITs.\n*Begin by searching - *", chat, keyboard)
 
 			elif text == "/help":
-				send_message("Possible options -\n/search - Search for Institutes\n/top10iit - Get Top 10 IITs\n/top10nit - Get Top 10 NITs\n I'm a bot 🤖, did I just break? \nPlease Report to [@moto_man](https://t.me/moto_man)", chat)
+				send_message("Available options -\n/search - Search for Institutes\n/top10iit  - Get Top 10 IITs\n/top10nit - Get Top 10 NITs\nI'm a bot 🤖, did I just break? \nPlease Report to [@moto_man](https://t.me/moto_man)", chat)
 
-			elif text == "Within State":
+			elif text == "Statewise search":
 				keyboard = build_keyboard(state_name_list)
 				send_message("Select State to list all NITs & IITs within ", chat, keyboard)
 
-			elif text == "Institute Name":
+			elif text == "Institute Name search":
 				message = "Enter name of NIT/IIT you want to know about."
 				send_message(message, chat)
-
-			elif text in state_name_list:
-				institutes = db["Institute_info"].find({"state":text})
-				list_ = []
-				for institute in institutes:
-					list_.append(institute["name"])
-				keyboard = build_keyboard(list_)
-				send_message("Following are IITs and NITs present :\nSelect one to know more about it - ", chat, keyboard)
 
 			elif text in institute_name_list:
 				i_obj = db["Institute_info"].find_one({"name":text})
 				ranking = i_obj["rankings"]
-				print(text)
 				msg_rank = ""
 				for key, value in ranking.items():
 					msg_rank += str(key)+" : "+str(value)+"\n"
@@ -102,15 +93,23 @@ def handle_updates(updates):
 				for value in i_obj["departments"]:
 					msg_dept += value+"\n"
 
-				message = "*{}*\n*Location* : {}\n*Established* : {}\n*Rankings* : {}*Departments* : \n{}[Website]({}), [Wiki]({})\n\
+				message = "*{}*\n*Location* : {}\n*Established* : {}\n*Rankings* : {}*Departments* : \n{}[Website]({}), [Wikipedia]({})\n\
 				".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
-				print(message)
 				send_message(message, chat)
-				send_message("You can always /search again\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
+				send_message("You can always /search again.\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
-			elif text == "/top10nit":
+			elif text in state_name_list:
+				institutes = db["Institute_info"].find({"state":text})
+				list_ = []
+				for institute in institutes:
+					list_.append(institute["name"])
+				keyboard = build_keyboard(list_)
+				message = "Following are IITs and NITs present in {} :\nSelect one to know more about it - ".format(text)
+				send_message(message, chat, keyboard)
+
+			elif text.lower() == "/top10nit":
 				obj = db["ranking_nit"].find({}).sort("rank").limit(10)
-				message = "*Top Ranks according to National Institutional Ranking Framework(NIRF)-2018*\n"
+				message = "*Top 10 Ranks according to National Institutional Ranking Framework (NIRF), 2018*\n"
 				for value in obj:
 					rank = int(value["rank"])
 					message += str(rank)
@@ -118,11 +117,11 @@ def handle_updates(updates):
 					message += value["name"]
 					message += "\n"
 				send_message(message, chat)
-				send_message("You can always /search, check /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
+				send_message("You can always /search.\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
-			elif text == "/top10iit":
+			elif text.lower() == "/top10iit":
 				obj = db["ranking_iit"].find({}).sort("rank").limit(10)
-				message = "*Top Ranks according to National Institutional Ranking Framework(NIRF)-2018*\n"
+				message = "*Top 10 Ranks according to National Institutional Ranking Framework (NIRF), 2018*\n"
 				for value in obj:
 					rank = int(value["rank"])
 					message += str(rank)
@@ -130,7 +129,7 @@ def handle_updates(updates):
 					message += value["name"]
 					message += "\n"
 				send_message(message, chat)
-				send_message("You can always /search, check /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
+				send_message("You can always /search.\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
 			elif text.startswith("/"):
 				send_message("Sorry! I don't understand this msg.\nPlease try these commands /start /help", chat)
@@ -140,7 +139,7 @@ def handle_updates(updates):
 				send_message("These are the best match for given query.\nSelect to find more about them.\nYou can always /start", chat, keyboard)
 		except Exception as ex:
 			print(ex)
-			send_message("Sorry! I don't understand this msg.\nPlease try these commands /start /help", chat)
+			send_message("Sorry! I don't understand this msg.\nPlease /search again or get /help", chat)
 
 
 def build_keyboard(items):
@@ -168,13 +167,12 @@ def get_best_match(str_query):
 	best_guess_names = []
 	for name in list_:
 		best_guess_names.append(name[1])
-	# print(best_guess_names)
 	return best_guess_names
 
 def main():
 	last_update_id = None
 	while True:
-		print("Listening - \n")
+		print("Listening -")
 		print(datetime.datetime.now())
 		updates = get_updates(last_update_id)
 		if len(updates["result"])>0:
