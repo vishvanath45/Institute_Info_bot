@@ -16,9 +16,9 @@ def url_response(url):
 
 def send_message(text, chat_id, reply_markup=None):
 	text = urllib.parse.quote_plus(text)
-	url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
+	url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown&disable_web_page_preview=True".format(text, chat_id)
 	if reply_markup:
-		url += "&reply_markup={}".format(reply_markup)
+		url += "&reply_markup={}&disable_web_page_preview=True".format(reply_markup)
 	url_response(url)
 
 def get_updates(offset=None):
@@ -41,7 +41,10 @@ def handle_updates(updates):
 	for names in state_name_db_obj["names"]:
 		state_name_list.append(names)
 
-
+	institute_name_db_obj = db["Institute_info"]
+	institute_name_list = []
+	for i_name in institute_name_db_obj.find({}):
+		institute_name_list.append(i_name["name"])
 
 	for update in updates["result"]:
 		text = update["message"]["text"]
@@ -50,20 +53,32 @@ def handle_updates(updates):
 			items = ["Institute Name", "Within State"]
 			keyboard = build_keyboard(items)
 			send_message("Welcome to your Institute Information Finder Bot.\n\
-				You can get information about NITs, IITs, IIITs.\n\
+				You can get information about NITs & IITs.\n\
 				*Begin by searching - *", chat, keyboard)
 		elif text == "Within State":
 			keyboard = build_keyboard(state_name_list)
-			send_message("Select State to list all NITs, IITs & IIITs within ", chat, keyboard)
+			send_message("Select State to list all NITs & IITs within ", chat, keyboard)
 		elif text in state_name_list:
 			institutes = db["Institute_info"].find({"state":text})
 			list_ = []
 			for institute in institutes:
-				# print(xyz["name"])
 				list_.append(institute["name"])
 			keyboard = build_keyboard(list_)
 			send_message("Following are IITs and NITs present :\n\
 				Select one to know more about it - ", chat, keyboard)
+		elif text in institute_name_list:
+			i_obj = db["Institute_info"].find_one({"name":text})
+			ranking = i_obj["rankings"]
+			msg_rank = ""
+			for key, value in ranking.items():
+				msg_rank += str(key)+" : "+str(value)+"\n"
+			message = "*{}*\n\
+			*Location* : {}\n\
+			*Established* : {}\n\
+			*Rankings* : {}\
+			[Website]({}), [Wiki]({})\n\
+			".format(text, i_obj["location"], i_obj["established"], msg_rank, i_obj["website"], i_obj["wiki_link"])
+			send_message(message, chat)
 		elif text.startswith("/"):
 			continue
 		else:
