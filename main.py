@@ -55,80 +55,83 @@ def handle_updates(updates):
 	institute_name_list = get_institutes()
 
 	for update in updates["result"]:
-
-		text = update["message"]["text"]
 		chat = update["message"]["chat"]["id"]
+		try:
+			text = update["message"]["text"]
+			if text == "/start":
+				items = ["Institute Name", "Within State"]
+				keyboard = build_keyboard(items)
+				send_message("Welcome to Institute Information Finder Bot.🤖\n\
+					You can get information about NITs & IITs.\n\
+					*Begin by searching - *", chat, keyboard)
 
-		if text == "/start" or text == "/new_search":
-			items = ["Institute Name", "Within State"]
-			keyboard = build_keyboard(items)
-			send_message("Welcome to Institute Information Finder Bot.🤖\n\
-				You can get information about NITs & IITs.\n\
-				*Begin by searching - *", chat, keyboard)
+			elif text == "Within State":
+				keyboard = build_keyboard(state_name_list)
+				send_message("Select State to list all NITs & IITs within ", chat, keyboard)
 
-		elif text == "Within State":
-			keyboard = build_keyboard(state_name_list)
-			send_message("Select State to list all NITs & IITs within ", chat, keyboard)
+			elif text == "Institute Name":
+				message = "Enter name of NIT/IIT you want to know about."
+				send_message(message, chat)
 
-		elif text == "Institute Name":
-			message = "Enter name of NIT/IIT you want to know about."
-			send_message(message, chat)
+			elif text in state_name_list:
+				institutes = db["Institute_info"].find({"state":text})
+				list_ = []
+				for institute in institutes:
+					list_.append(institute["name"])
+				keyboard = build_keyboard(list_)
+				send_message("Following are IITs and NITs present :\n\
+					Select one to know more about it - ", chat, keyboard)
 
-		elif text in state_name_list:
-			institutes = db["Institute_info"].find({"state":text})
-			list_ = []
-			for institute in institutes:
-				list_.append(institute["name"])
-			keyboard = build_keyboard(list_)
-			send_message("Following are IITs and NITs present :\n\
-				Select one to know more about it - ", chat, keyboard)
+			elif text in institute_name_list:
+				i_obj = db["Institute_info"].find_one({"name":text})
+				ranking = i_obj["rankings"]
 
-		elif text in institute_name_list:
-			i_obj = db["Institute_info"].find_one({"name":text})
-			ranking = i_obj["rankings"]
+				msg_rank = ""
+				for key, value in ranking.items():
+					msg_rank += str(key)+" : "+str(value)+"\n"
 
-			msg_rank = ""
-			for key, value in ranking.items():
-				msg_rank += str(key)+" : "+str(value)+"\n"
+				msg_dept = ""
+				for value in i_obj["departments"]:
+					msg_dept += value+"\n"
 
-			msg_dept = ""
-			for value in i_obj["departments"]:
-				msg_dept += value+"\n"
+				message = "*{}*\n\
+				*Location* : {}\n\
+				*Established* : {}\n\
+				*Rankings* : {}\
+				*Departments* : {}\
+				[Website]({}), [Wiki]({})\n\
+				".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
+				send_message(message, chat)
 
-			message = "*{}*\n\
-			*Location* : {}\n\
-			*Established* : {}\n\
-			*Rankings* : {}\
-			*Departments* : {}\
-			[Website]({}), [Wiki]({})\n\
-			".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
-			send_message(message, chat)
+			elif text == "/top10NIT":
+				obj = db["ranking_nit"].find({}).sort("rank").limit(10)
+				message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
+				for value in obj:
+					message += value["name"]
+					message += "\n"
+				send_message(message, chat)
 
-		elif text == "/top10NIT":
-			obj = db["ranking_nit"].find({}).sort("rank").limit(10)
-			message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
-			for value in obj:
-				message += value["name"]
-				message += "\n"
-			send_message(message, chat)
+			elif text == "/top10IIT":
+				obj = db["ranking_iit"].find({}).sort("rank").limit(10)
+				message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
+				for value in obj:
+					message += value["name"]
+					message += "\n"
+				send_message(message, chat)
 
-		elif text == "/top10IIT":
-			obj = db["ranking_iit"].find({}).sort("rank").limit(10)
-			message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
-			for value in obj:
-				message += value["name"]
-				message += "\n"
-			send_message(message, chat)
+			elif text.startswith("/"):
+				continue
 
-		elif text.startswith("/"):
-			continue
+			else:
+				best_guess = get_best_match(text)
+				keyboard = build_keyboard(best_guess)
+				send_message("These are the best match for given query\n\
+					Select to find more about them\n\
+					You can always /start", chat, keyboard)
+		except:
+			send_message("Sorry! Could not get you.\n\
+					You can always /start /help", chat)
 
-		else:
-			best_guess = get_best_match(text)
-			keyboard = build_keyboard(best_guess)
-			send_message("These are the best match for given query\n\
-				Select to find more about them\n\
-				You can always /new_search /help /options", chat, keyboard)
 
 def build_keyboard(items):
 	keyboard = [[item] for item in items]
