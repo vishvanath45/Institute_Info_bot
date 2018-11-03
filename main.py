@@ -36,6 +36,10 @@ def get_last_update_id(updates):
 	return max(updates_ids)
 
 def get_states():
+	"""
+	Returns a Python List containing names of all Indian States,
+	fetched from DB.
+	"""
 	state_name_db_obj = db["states"].find_one({"value":"state_names"})
 	list_ = []
 	for names in state_name_db_obj["names"]:
@@ -43,6 +47,10 @@ def get_states():
 	return list_
 
 def get_institutes():
+	"""
+	Returns a Python List containing names of all Institutes,
+	fetched from DB.
+	"""
 	institute_name_db_obj = db["Institute_info"]
 	institute_name_list = []
 	for i_name in institute_name_db_obj.find({}):
@@ -58,6 +66,7 @@ def handle_updates(updates):
 		chat = update["message"]["chat"]["id"]
 		try:
 			text = update["message"]["text"]
+
 			if text == "/start":
 				send_message("Welcome to Institute Information Finder Bot.🤖\nYou can get information about NITs & IITs.\n\
 				*Features* - \n\
@@ -67,6 +76,10 @@ def handle_updates(updates):
 				/help - Get help any time\n", chat)
 
 			elif text == "/search":
+				"""
+				User can search either via Inputting names directly
+				or Statewise Institutes
+				"""
 				items = ["Institute Name search", "Statewise search"]
 				keyboard = build_keyboard(items)
 				send_message("Welcome to College Knowledge Bot.🤖\nYou can get information about NITs & IITs.\n*Begin by searching - *", chat, keyboard)
@@ -75,14 +88,25 @@ def handle_updates(updates):
 				send_message("Available options -\n/search - Search for Institutes\n/top10iit  - Get Top 10 IITs\n/top10nit - Get Top 10 NITs\nI'm a bot 🤖, did I just break? \nPlease Report to [@moto_man](https://t.me/moto_man)", chat)
 
 			elif text == "Statewise search":
+				"""
+				Generates a customized Keyboard, gives option to User to choose
+				State.
+				"""
 				keyboard = build_keyboard(state_name_list)
 				send_message("Select State to list all NITs & IITs within ", chat, keyboard)
 
 			elif text == "Institute Name search":
+				"""
+				Let's User Input name of Institute he/she wishes to search.
+				"""
 				message = "Enter name of NIT/IIT you want to know about."
 				send_message(message, chat)
 
 			elif text in institute_name_list:
+				"""
+				If Input given by User is found in List of Institutes,
+				this part of code sends complete details of Institute to user as reply.
+				"""
 				i_obj = db["Institute_info"].find_one({"name":text})
 				ranking = i_obj["rankings"]
 				msg_rank = ""
@@ -94,11 +118,16 @@ def handle_updates(updates):
 					msg_dept += value+"\n"
 
 				message = "*{}*\n*Location* : {}\n*Established* : {}\n*Rankings* : {}*Departments* : \n{}[Website]({}), [Wikipedia]({})\n\
-				".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
+				".format(text, i_obj["location"], i_obj["established"], msg_rank, msg_dept, i_obj["website"], i_obj["wiki_link"])
 				send_message(message, chat)
 				send_message("You can always /search again.\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
 			elif text in state_name_list:
+				"""
+				If Input given by User is found in List of States,
+				this part of code sends User the name of Institutes in that state and
+				creates customized keyboard for user to choose between them.
+				"""
 				institutes = db["Institute_info"].find({"state":text})
 				list_ = []
 				for institute in institutes:
@@ -108,6 +137,10 @@ def handle_updates(updates):
 				send_message(message, chat, keyboard)
 
 			elif text.lower() == "/top10nit":
+				"""
+				Sends List of Top 10 NITs according to NIRF ranking,
+				Directly fetches data from DB, and sorts it according to rank.
+				"""
 				obj = db["ranking_nit"].find({}).sort("rank").limit(10)
 				message = "*Top 10 Ranks according to National Institutional Ranking Framework (NIRF), 2018*\n"
 				for value in obj:
@@ -120,6 +153,10 @@ def handle_updates(updates):
 				send_message("You can always /search.\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
 			elif text.lower() == "/top10iit":
+				"""
+				Sends List of Top 10 NITs according to NIRF ranking,
+				Directly fetches data from DB, and sorts it according to rank.
+				"""
 				obj = db["ranking_iit"].find({}).sort("rank").limit(10)
 				message = "*Top 10 Ranks according to National Institutional Ranking Framework (NIRF), 2018*\n"
 				for value in obj:
@@ -134,6 +171,13 @@ def handle_updates(updates):
 			elif text.startswith("/"):
 				send_message("Sorry! I don't understand this msg.\nPlease try these commands /start /help", chat)
 			else:
+				"""
+				If nothing matches above option then, we assume that user wants to search by name
+				and according make our best guess.
+				More details are given in get_best_match()
+				It returns Top 5 most probable Institute and creates a customized Keyboard to allow user to choose
+				between them
+				"""
 				best_guess = get_best_match(text)
 				keyboard = build_keyboard(best_guess)
 				send_message("These are the best match for given query.\nSelect to find more about them.\nYou can always /start", chat, keyboard)
@@ -143,6 +187,9 @@ def handle_updates(updates):
 
 
 def build_keyboard(items):
+	"""
+	Build Customized Telegram Keyboard
+	"""
 	keyboard = [[item] for item in items]
 	reply_markup = {"keyboard":keyboard, "one_time_keyboard": True}
 	return json.dumps(reply_markup)
@@ -151,6 +198,29 @@ def getKey(item):
 	return item[0]
 
 def get_best_match(str_query):
+	"""
+	Argument : A string
+	Returns : List of 5 most Institute name matching with given string
+
+	Method : I use Fuzzy String Matching Package provied in python.
+
+	The search is made between the given string and 3 parameter and then
+	net score(string_matching) is calculated.
+
+	Parameter 1 : Name of Institute
+	Parameter 2 : Location
+	Parameter 3 : Tags(NITDGP, IITK)
+
+	Here tags are given more weightage over other two.
+
+	Example - National Institute of Technology, Durgapur
+				is popularly known as NIT-DGP, NITD.
+			  Indian Institute of Technology, Kanpur
+				is popularly known as IITK.
+
+	and finally we are choosing 5 Institute names with highest matching
+	score.
+	"""
 	list_ = []
 	str_query = str_query.lower()
 	for i_name in db["Institute_info"].find({}):
