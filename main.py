@@ -5,6 +5,7 @@ import time
 import urllib
 import os
 from db_conn import db
+from fuzzywuzzy import fuzz
 
 TOKEN = os.environ['TELEGRAM_TOKEN']
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
@@ -34,30 +35,45 @@ def get_last_update_id(updates):
 		updates_ids.append(int(update["update_id"]))
 	return max(updates_ids)
 
-def handle_updates(updates):
-
+def get_states():
 	state_name_db_obj = db["states"].find_one({"value":"state_names"})
-	state_name_list = []
+	list_ = []
 	for names in state_name_db_obj["names"]:
-		state_name_list.append(names)
+		list_.append(names)
+	return list_
 
+def get_institutes():
 	institute_name_db_obj = db["Institute_info"]
 	institute_name_list = []
 	for i_name in institute_name_db_obj.find({}):
 		institute_name_list.append(i_name["name"])
+	return institute_name_list
+
+def handle_updates(updates):
+
+	state_name_list = get_states()
+	institute_name_list = get_institutes()
 
 	for update in updates["result"]:
+
 		text = update["message"]["text"]
 		chat = update["message"]["chat"]["id"]
+
 		if text == "/start":
 			items = ["Institute Name", "Within State"]
 			keyboard = build_keyboard(items)
 			send_message("Welcome to your Institute Information Finder Bot.\n\
 				You can get information about NITs & IITs.\n\
 				*Begin by searching - *", chat, keyboard)
+
 		elif text == "Within State":
 			keyboard = build_keyboard(state_name_list)
 			send_message("Select State to list all NITs & IITs within ", chat, keyboard)
+
+		elif text == "Institute Name":
+			message = "Enter name of NIT/IIT you want to know about."
+			send_message(message, chat)
+
 		elif text in state_name_list:
 			institutes = db["Institute_info"].find({"state":text})
 			list_ = []
@@ -66,6 +82,7 @@ def handle_updates(updates):
 			keyboard = build_keyboard(list_)
 			send_message("Following are IITs and NITs present :\n\
 				Select one to know more about it - ", chat, keyboard)
+
 		elif text in institute_name_list:
 			i_obj = db["Institute_info"].find_one({"name":text})
 			ranking = i_obj["rankings"]
@@ -87,22 +104,37 @@ def handle_updates(updates):
 		elif text.startswith("/"):
 			continue
 		else:
-			send_message("Sorry Couldn't get you!\n\
-				You can always /start", chat)
+			best_guess = get_best_match(text)
+			keyboard = build_keyboard(best_guess)
+			send_message("These are the best match for given query\n\
+				Select to find more about them\n\
+				You can always /start", chat, keyboard)
 
 def build_keyboard(items):
 	keyboard = [[item] for item in items]
 	reply_markup = {"keyboard":keyboard, "one_time_keyboard": True}
 	return json.dumps(reply_markup)
 
-def echo_all(updates):
-	for update in updates["result"]:
-		try:
-			text = update["message"]["text"]
-			chat = update["message"]["chat"]["id"]
-			send_message(text,chat)
-		except Exception as e:
-			print(e)
+def getKey(item):
+	return item[0]
+
+def get_best_match(str_query):
+	list_ = []
+	str_query = str_query.lower()
+	for i_name in db["Institute_info"].find({}):
+		score = 0
+		score += fuzz.partial_ratio(str_query, i_name["name"].lower())
+		score += fuzz.token_sort_ratio(str_query, i_name["location"].lower())
+		list_.append([score, i_name["name"]])
+	list_ = sorted(list_, key=getKey)
+	# Sort in Decresing order of score
+	list_ = list_[::-1]
+	# Getting Top 5 best matches
+	list_ = list_[:5]
+	best_guess_names = []
+	for name in list_:
+		best_guess_names.append(name[1])
+	return best_guess_names
 
 def main():
 	last_update_id = None
@@ -110,7 +142,6 @@ def main():
 		print("Listening - \n")
 		print(datetime.datetime.now())
 		updates = get_updates(last_update_id)
-		# print(updates)
 		if len(updates["result"])>0:
 			last_update_id = get_last_update_id(updates) + 1
 			handle_updates(updates)
