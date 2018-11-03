@@ -35,6 +35,14 @@ def get_last_update_id(updates):
 	return max(updates_ids)
 
 def handle_updates(updates):
+
+	state_name_db_obj = db["states"].find_one({"value":"state_names"})
+	state_name_list = []
+	for names in state_name_db_obj["names"]:
+		state_name_list.append(names)
+
+
+
 	for update in updates["result"]:
 		text = update["message"]["text"]
 		chat = update["message"]["chat"]["id"]
@@ -44,13 +52,18 @@ def handle_updates(updates):
 			send_message("Welcome to your Institute Information Finder Bot.\n\
 				You can get information about NITs, IITs, IIITs.\n\
 				*Begin by searching - *", chat, keyboard)
-		if text == "Within State":
-			state_names = db["states"].find_one({"value":"state_names"})
-			items_ = []
-			for names in state_names["names"]:
-				items_.append(names)
-			keyboard = build_keyboard(items_)
+		elif text == "Within State":
+			keyboard = build_keyboard(state_name_list)
 			send_message("Select State to list all NITs, IITs & IIITs within ", chat, keyboard)
+		elif text in state_name_list:
+			institutes = db["Institute_info"].find({"state":text})
+			list_ = []
+			for institute in institutes:
+				# print(xyz["name"])
+				list_.append(institute["name"])
+			keyboard = build_keyboard(list_)
+			send_message("Following are IITs and NITs present :\n\
+				Select one to know more about it - ", chat, keyboard)
 		elif text.startswith("/"):
 			continue
 		else:
