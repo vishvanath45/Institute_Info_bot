@@ -62,7 +62,7 @@ def handle_updates(updates):
 		if text == "/start" or text == "/new_search":
 			items = ["Institute Name", "Within State"]
 			keyboard = build_keyboard(items)
-			send_message("Welcome to your Institute Information Finder Bot.🤖\n\
+			send_message("Welcome to Institute Information Finder Bot.🤖\n\
 				You can get information about NITs & IITs.\n\
 				*Begin by searching - *", chat, keyboard)
 
@@ -104,6 +104,22 @@ def handle_updates(updates):
 			".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
 			send_message(message, chat)
 
+		elif text == "/top10NIT":
+			obj = db["ranking_nit"].find({}).sort("rank").limit(10)
+			message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
+			for value in obj:
+				message += value["name"]
+				message += "\n"
+			send_message(message, chat)
+
+		elif text == "/top10IIT":
+			obj = db["ranking_iit"].find({}).sort("rank").limit(10)
+			message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
+			for value in obj:
+				message += value["name"]
+				message += "\n"
+			send_message(message, chat)
+
 		elif text.startswith("/"):
 			continue
 
@@ -112,7 +128,7 @@ def handle_updates(updates):
 			keyboard = build_keyboard(best_guess)
 			send_message("These are the best match for given query\n\
 				Select to find more about them\n\
-				You can always /start", chat, keyboard)
+				You can always /new_search /help /options", chat, keyboard)
 
 def build_keyboard(items):
 	keyboard = [[item] for item in items]
@@ -139,6 +155,7 @@ def get_best_match(str_query):
 	best_guess_names = []
 	for name in list_:
 		best_guess_names.append(name[1])
+	# print(best_guess_names)
 	return best_guess_names
 
 def main():
