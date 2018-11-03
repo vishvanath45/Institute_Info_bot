@@ -59,11 +59,20 @@ def handle_updates(updates):
 		try:
 			text = update["message"]["text"]
 			if text == "/start":
+				send_message("Welcome to Institute Information Finder Bot.🤖\nYou can get information about NITs & IITs.\n\
+				*Features* - \n\
+				/search - Search for Institutes\n\
+				/top10iit - Get Top 10 IITs\n\
+				/top10nit - Get Top 10 NITs\n\
+				/help - Get help any time\n", chat)
+
+			elif text == "/search":
 				items = ["Institute Name", "Within State"]
 				keyboard = build_keyboard(items)
-				send_message("Welcome to Institute Information Finder Bot.🤖\n\
-					You can get information about NITs & IITs.\n\
-					*Begin by searching - *", chat, keyboard)
+				send_message("Welcome to Institute Information Finder Bot.🤖\nYou can get information about NITs & IITs.\n*Begin by searching - *", chat, keyboard)
+
+			elif text == "/help":
+				send_message("Possible options -\n/search - Search for Institutes\n/top10iit - Get Top 10 IITs\n/top10nit - Get Top 10 NITs\n I'm a bot 🤖, did I just break? \nPlease Report to [@moto_man](https://t.me/moto_man)", chat)
 
 			elif text == "Within State":
 				keyboard = build_keyboard(state_name_list)
@@ -79,13 +88,12 @@ def handle_updates(updates):
 				for institute in institutes:
 					list_.append(institute["name"])
 				keyboard = build_keyboard(list_)
-				send_message("Following are IITs and NITs present :\n\
-					Select one to know more about it - ", chat, keyboard)
+				send_message("Following are IITs and NITs present :\nSelect one to know more about it - ", chat, keyboard)
 
 			elif text in institute_name_list:
 				i_obj = db["Institute_info"].find_one({"name":text})
 				ranking = i_obj["rankings"]
-
+				print(text)
 				msg_rank = ""
 				for key, value in ranking.items():
 					msg_rank += str(key)+" : "+str(value)+"\n"
@@ -94,43 +102,45 @@ def handle_updates(updates):
 				for value in i_obj["departments"]:
 					msg_dept += value+"\n"
 
-				message = "*{}*\n\
-				*Location* : {}\n\
-				*Established* : {}\n\
-				*Rankings* : {}\
-				*Departments* : {}\
-				[Website]({}), [Wiki]({})\n\
+				message = "*{}*\n*Location* : {}\n*Established* : {}\n*Rankings* : {}*Departments* : \n{}[Website]({}), [Wiki]({})\n\
 				".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
+				print(message)
 				send_message(message, chat)
+				send_message("You can always /search again\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
-			elif text == "/top10NIT":
+			elif text == "/top10nit":
 				obj = db["ranking_nit"].find({}).sort("rank").limit(10)
-				message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
+				message = "*Top Ranks according to National Institutional Ranking Framework(NIRF)-2018*\n"
 				for value in obj:
+					rank = int(value["rank"])
+					message += str(rank)
+					message += ". "
 					message += value["name"]
 					message += "\n"
 				send_message(message, chat)
+				send_message("You can always /search, check /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
-			elif text == "/top10IIT":
+			elif text == "/top10iit":
 				obj = db["ranking_iit"].find({}).sort("rank").limit(10)
-				message = "Top Ranks according to National Institutional Ranking Framework(NIRF)-2018\n"
+				message = "*Top Ranks according to National Institutional Ranking Framework(NIRF)-2018*\n"
 				for value in obj:
+					rank = int(value["rank"])
+					message += str(rank)
+					message += ". "
 					message += value["name"]
 					message += "\n"
 				send_message(message, chat)
+				send_message("You can always /search, check /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
 			elif text.startswith("/"):
-				continue
-
+				send_message("Sorry! I don't understand this msg.\nPlease try these commands /start /help", chat)
 			else:
 				best_guess = get_best_match(text)
 				keyboard = build_keyboard(best_guess)
-				send_message("These are the best match for given query\n\
-					Select to find more about them\n\
-					You can always /start", chat, keyboard)
-		except:
-			send_message("Sorry! Could not get you.\n\
-					You can always /start /help", chat)
+				send_message("These are the best match for given query.\nSelect to find more about them.\nYou can always /start", chat, keyboard)
+		except Exception as ex:
+			print(ex)
+			send_message("Sorry! I don't understand this msg.\nPlease try these commands /start /help", chat)
 
 
 def build_keyboard(items):
