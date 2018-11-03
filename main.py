@@ -59,10 +59,10 @@ def handle_updates(updates):
 		text = update["message"]["text"]
 		chat = update["message"]["chat"]["id"]
 
-		if text == "/start":
+		if text == "/start" or text == "/new_search":
 			items = ["Institute Name", "Within State"]
 			keyboard = build_keyboard(items)
-			send_message("Welcome to your Institute Information Finder Bot.\n\
+			send_message("Welcome to your Institute Information Finder Bot.🤖\n\
 				You can get information about NITs & IITs.\n\
 				*Begin by searching - *", chat, keyboard)
 
@@ -86,13 +86,15 @@ def handle_updates(updates):
 		elif text in institute_name_list:
 			i_obj = db["Institute_info"].find_one({"name":text})
 			ranking = i_obj["rankings"]
+
 			msg_rank = ""
 			for key, value in ranking.items():
 				msg_rank += str(key)+" : "+str(value)+"\n"
-			msg_dept = ""
 
+			msg_dept = ""
 			for value in i_obj["departments"]:
 				msg_dept += value+"\n"
+
 			message = "*{}*\n\
 			*Location* : {}\n\
 			*Established* : {}\n\
@@ -101,8 +103,10 @@ def handle_updates(updates):
 			[Website]({}), [Wiki]({})\n\
 			".format(text, i_obj["location"], i_obj["established"], msg_rank,msg_dept, i_obj["website"], i_obj["wiki_link"])
 			send_message(message, chat)
+
 		elif text.startswith("/"):
 			continue
+
 		else:
 			best_guess = get_best_match(text)
 			keyboard = build_keyboard(best_guess)
@@ -125,6 +129,7 @@ def get_best_match(str_query):
 		score = 0
 		score += fuzz.partial_ratio(str_query, i_name["name"].lower())
 		score += fuzz.token_sort_ratio(str_query, i_name["location"].lower())
+		score += 3*(fuzz.token_set_ratio(str_query, i_name["tags"].lower()))
 		list_.append([score, i_name["name"]])
 	list_ = sorted(list_, key=getKey)
 	# Sort in Decresing order of score
