@@ -63,9 +63,17 @@ def handle_updates(updates):
 	institute_name_list = get_institutes()
 
 	for update in updates["result"]:
-		chat = update["message"]["chat"]["id"]
+
 		try:
-			text = update["message"]["text"]
+			chat = update["message"]["chat"]["id"]
+		except KeyError:
+			chat = update["edited_message"]["chat"]["id"]
+
+		try:
+			try:
+				text = update["message"]["text"]
+			except KeyError:
+				text = update["edited_message"]["text"]
 
 			if text == "/start":
 				send_message("Welcome to Institute Information Finder Bot.🤖\nYou can get information about NITs & IITs.\n\
