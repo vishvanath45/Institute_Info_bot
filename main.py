@@ -117,8 +117,8 @@ def handle_updates(updates):
 				for value in i_obj["departments"]:
 					msg_dept += value+"\n"
 
-				message = "*{}*\n*Location* : {}\n*Established* : {}\n*Rankings* : {}*Admission Exams* : {}\n*Departments* : \n{}[Website]({}), [Wikipedia]({})\n\
-				".format(text, i_obj["location"], i_obj["established"], msg_rank, i_obj["admission_process"], msg_dept, i_obj["website"], i_obj["wiki_link"])
+				message = "*{}*\n*Location* : {}\n*Established* : {}\n*Rankings* : {}*Admission Exams* : {}\n*Courses Offered* : {}\n*Departments* : \n{}[Website]({}), [Wikipedia]({})\n\
+				".format(text, i_obj["location"], i_obj["established"], msg_rank, i_obj["admission_process"], i_obj["courses_offered"], msg_dept, i_obj["website"], i_obj["wiki_link"])
 				send_message(message, chat)
 				send_message("You can always /search again.\nCheck /top10nit, /top10iit or get /help.\n*Note* - Raw queries directly searches by Institute name!", chat)
 
